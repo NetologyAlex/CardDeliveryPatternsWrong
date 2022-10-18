@@ -1,83 +1,92 @@
-package ru.netology.test;
+package ru.netology.delivery.test;
 
-import com.codeborne.selenide.Configuration;
-import com.github.javafaker.Faker;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
+import com.codeborne.selenide.SelenideElement;
+
+import com.google.j2objc.annotations.LoopTranslation;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.Keys;
-import ru.netology.data.DataGenerator;
+import ru.netology.delivery.data.DataGenerator;
 
-import java.io.IOException;
-import java.time.Duration;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 import static com.codeborne.selenide.Condition.*;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.withText;
-import static com.codeborne.selenide.Selenide.*;
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.open;
 
-public class CardDeliveryOrderTest {
+class CardDeliveryOrder {
 
-    private static Faker faker;
-    private int firstDay = 4;
-    private int secondDay = 6;
+    String name = DataGenerator.generateName();
+    String phone = DataGenerator.generatePhone();
+    String city = DataGenerator.generateCity();
 
-    String firstDayDelivery = LocalDate.now()
-            .plusDays(firstDay)
-            .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-
-    String secondDayDelivery = LocalDate.now()
-            .plusDays(secondDay)
-            .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-
-    String IncorrectDayDelivery = LocalDate.now()
-            .plusDays(1)
-            .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-
-    @BeforeAll
-    static void setUpAll() {
-        faker = new Faker(new Locale("ru"));
-    }
-
-
-    @BeforeEach
-    void setUp() {
-        open("http://localhost:9999/");
+    @Test
+    void shouldSubmitRequest() {
+        open("http://localhost:9999");
+        SelenideElement form = $(".form");
+        form.$("[data-test-id=city] input").setValue(city);
+        form.$("[data-test-id=date] input").doubleClick().sendKeys(DataGenerator.generateDate(3));
+        form.$("[data-test-id=name] input").setValue(name);
+        form.$("[data-test-id=phone] input").setValue(phone);
+        form.$("[data-test-id=agreement]").click();
+        form.$(".button").click();
+        $(".notification_status_ok").shouldBe(visible);
+        $("[data-test-id='success-notification'] .notification__content").shouldHave(exactText("Встреча успешно запланирована на " + DataGenerator.generateDate(3)));
+        form.$("[data-test-id=date] input").doubleClick().sendKeys(DataGenerator.generateDate(7));
+        form.$(".button").click();
+        $("[data-test-id=replan-notification]").waitUntil(visible, 15000);
+        $(withText("Перепланировать")).click();
+        $(".notification_status_ok").shouldBe(visible);
+        $(".notification__content").shouldHave(exactText("Встреча успешно запланирована на " + DataGenerator.generateDate(7)));
     }
 
     @Test
-    void shouldShowErrorWithIncorrectData() throws IOException {
-
-        $("[placeholder='Дата встречи']").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.BACK_SPACE);
-        $("[data-test-id='date'] input").sendKeys(IncorrectDayDelivery);
-        $("[name='name']").setValue(DataGenerator.generateName());
-        $("[name='phone']").setValue(DataGenerator.generatePhone());
-        $("[placeholder='Город']").setValue(DataGenerator.generateCity());
-        $("[data-test-id='agreement']").click();
+    void shouldEnterAnIncorrectFirstAndLastName() {
+        open("http://localhost:9999");
+        SelenideElement form = $(".form");
+        form.$("[data-test-id=city] input").setValue(city);
+        form.$("[data-test-id=date] input").doubleClick().sendKeys(DataGenerator.generateDate(3));
+        $("[data-test-id=name] input").setValue("Ivanov Ivan");
+        $("[data-test-id=phone] input").setValue(phone);
+        $("[data-test-id=agreement]").click();
         $(".button").click();
-        $("[data-test-id='date'].input_invalid.input__sub")
-                .$(withText("Заказ на выбранную дату невозможен"));
+        $(byText("Имя и Фамилия указаные неверно. Допустимы только русские буквы, пробелы и дефисы."));
     }
 
     @Test
-    void shouldSuccessfulRescheduleMeeting() throws IOException {
-
-        $("[placeholder='Дата встречи']").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.BACK_SPACE);
-        $("[data-test-id='date'] input").sendKeys(firstDayDelivery);
-        $("[name='name']").setValue(DataGenerator.generateName());
-        $("[name='phone']").setValue(DataGenerator.generatePhone());
-        $("[placeholder='Город']").setValue(DataGenerator.generateCity());
-        $("[data-test-id='agreement']").click();
+    void shouldEnterAnIncorrectCity() {
+        open("http://localhost:9999");
+        SelenideElement form = $(".form");
+        form.$("[data-test-id=city] input").setValue("Ухта");
+        form.$("[data-test-id=date] input").doubleClick().sendKeys(DataGenerator.generateDate(3));
+        $("[data-test-id=name] input").setValue(name);
+        $("[data-test-id=phone] input").setValue(phone);
+        $("[data-test-id=agreement]").click();
         $(".button").click();
-        $("[data-test-id='success-notification']").shouldHave(text("Встреча успешно запланирована на "
-                + firstDayDelivery));
-        $("[data-test-id=date] input").doubleClick().sendKeys(Keys.BACK_SPACE);
-        $("[data-test-id=date] input").setValue(secondDayDelivery);
-        $$("button").find(exactText("Запланировать")).click();
-        $("[data-test-id='replan-notification']").shouldBe(visible);
-        $$("button").find(exactText("Перепланировать")).click();
-        $("div.notification__content").shouldBe(visible, Duration.ofSeconds(3)).shouldHave(text("Встреча успешно запланирована на " + secondDayDelivery));
+        $("[data-test-id=city].input_invalid").shouldHave(exactText("Доставка в выбранный город недоступна"));
+    }
+
+    @Test
+    void shouldInterAnIncorrectDate() {
+        open("http://localhost:9999");
+        SelenideElement form = $(".form");
+        form.$("[data-test-id=city] input").setValue(city);
+        form.$("[data-test-id=date] input").doubleClick().sendKeys(DataGenerator.generateDate(-3));
+        $("[data-test-id=name] input").setValue(name);
+        $("[data-test-id=phone] input").setValue(phone);
+        $("[data-test-id=agreement]").click();
+        $(".button").click();
+        $("[data-test-id=date]").shouldHave(exactText("Заказ на выбранную дату невозможен"));
+    }
+
+    @Test
+    void shouldLeaveAllFieldsEmpty() {
+        open("http://localhost:9999");
+        SelenideElement form = $(".form");
+        $(".button").click();
+        $("[data-test-id=city]").shouldHave(exactText("Поле обязательно для заполнения"));
     }
 }
