@@ -1,38 +1,50 @@
-package ru.netology.data;
+package ru.netology.delivery.data;
 
 import com.github.javafaker.Faker;
 
-import java.io.*;
-import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
-
 public class DataGenerator {
-    private static final Faker faker = new Faker(new Locale("ru"));
-    static String city;
+    private DataGenerator() {
+    }
 
-    public static String generateCity() throws IOException {
-        ArrayList<String> arrayList = new ArrayList<String>();
-        File file = new File("city.txt");
-        InputStreamReader isr = new InputStreamReader(new FileInputStream(file), "UTF-8");
-        BufferedReader br = new BufferedReader(isr);
-        String line;
-        while ((line = br.readLine()) != null) {
-            arrayList.add(line);
-        }
-        int size = arrayList.size();
-        int randomCityNum = new Random().nextInt(size);
-        return String.valueOf(arrayList.get(randomCityNum));
+    public static String generateDate(int days) {
+        // TODO: добавить логику для объявления переменной date и задания её значения, для генерации строки с датой
+        // Вы можете использовать класс LocalDate и его методы для получения и форматирования даты
+        String date = LocalDate.now().plusDays(days).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+        return date;
+    }
+
+    public static String generateCity() {
+        // TODO: добавить логику для объявления переменной city и задания её значения, генерацию можно выполнить
+        // с помощью Faker, либо используя массив валидных городов и класс Random
+        List<String> list = Arrays.asList("Архангельск", "Астрахань", "Барнаул", "Владикавказ",
+                "Горно-Алтайск", "Йошкар-Ола", "Казань", "Калининград", "Калуга", "Краснодар", "Махачкала",
+                "Нарьян-Мар", "Салехард", "Самара", "Саранск", "Саратов", "Хабаровск", "Ханты-Мансийск", "Южно-Сахалинск",
+                "Великий Новгород", "Владивосток", "Владимир", "Вологда", "Рязань", "Биробиджан", "Чебоксары", "Москва",
+                "Санкт-Петербург", "Ульяновск", "Симферополь", "Ростов-на-Дону");
+        Random rand = new Random();
+        String city = list.get(rand.nextInt(list.size()));
+        return city;
     }
 
     public static String generateName() {
-        String name = faker.name().name();
-        String newName = name.replace("ё", "е");
-        return newName;
+        // TODO: добавить логику для объявления переменной name и задания её значения, для генерации можно
+        // использовать Faker
+        Faker faker = new Faker(new Locale("ru"));
+        return faker.name().firstName() + " " + faker.name().lastName();
     }
 
     public static String generatePhone() {
-        return faker.number().digits(11);
+        // TODO: добавить логику для объявления переменной phone и задания её значения, для генерации можно
+        // использовать Faker
+        Faker faker = new Faker(new Locale("ru"));
+        return faker.phoneNumber().phoneNumber();
     }
+}
 }
